@@ -451,53 +451,49 @@
     }
 
     // Busca imagens reais na API da Wikipedia (Reconstrução em Vida e Fóssil)
-    async function fetchSpeciesImages(species) {
+        async function fetchSpeciesImages(species) {
       if (mediaCache[species.id]) return mediaCache[species.id];
 
+      // 1. SE VOCÊ COLOCOU LINKS DIRETOS NO BANCO DE DADOS, O SITE USA OS SEUS LINKS
+      if (species.customImg || species.customFossil) {
+        const result = {
+          restoration: species.customImg || "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/No_image_available.svg/480px-No_image_available.svg.png",
+          fossil: species.customFossil || species.customImg
+        };
+        mediaCache[species.id] = result;
+        return result;
+      }
+
+      // 2. SE NÃO HOUVER LINK DIRETO, ELE CONTINUA A BUSCAR NA WIKIPEDIA AUTOMATICAMENTE
       let restorationUrl = "";
       let fossilUrl = "";
-
       try {
         const summaryRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(species.wikiTitle)}`);
         const summaryData = await summaryRes.json();
         if (summaryData.thumbnail && summaryData.thumbnail.source) {
           restorationUrl = summaryData.originalimage ? summaryData.originalimage.source : summaryData.thumbnail.source;
         }
-
         const mediaRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/media-list/${encodeURIComponent(species.wikiTitle)}`);
         const mediaData = await mediaRes.json();
-
         if (mediaData.items && mediaData.items.length > 0) {
           const images = mediaData.items.filter(item => item.type === "image" && item.srcset && item.srcset.length > 0);
           for (const img of images) {
-            const titleLower = (img.title || "").toLowerCase();
-            const captionLower = (img.caption && img.caption.text ? img.caption.text : "").toLowerCase();
-            const combined = titleLower + " " + captionLower;
-            const src = img.srcset[img.srcset.length - 1].src;
-            const fullSrc = src.startsWith("//") ? "https:" + src : src;
-
-            if (!fossilUrl && (combined.includes("skull") || combined.includes("skeleton") || combined.includes("fossil") || combined.includes("holotype") || combined.includes("mount") || combined.includes("bone"))) {
-              if (fullSrc !== restorationUrl) fossilUrl = fullSrc;
-            }
-            if ((combined.includes("restoration") || combined.includes("reconstruction") || combined.includes("life") || combined.includes("ntamura") || combined.includes("paleoart")) && !restorationUrl) {
-              restorationUrl = fullSrc;
-            }
+            const combined = ((img.title || "") + " " + (img.caption && img.caption.text ? img.caption.text : "")).toLowerCase();
+            const fullSrc = img.srcset[img.srcset.length - 1].src.startsWith("//") ? "https:" + img.srcset[img.srcset.length - 1].src : img.srcset[img.srcset.length - 1].src;
+            
+            if (!fossilUrl && (combined.includes("skull") || combined.includes("skeleton") || combined.includes("fossil") || combined.includes("mount"))) fossilUrl = fullSrc;
+            if (!restorationUrl && (combined.includes("restoration") || combined.includes("life") || combined.includes("paleoart"))) restorationUrl = fullSrc;
           }
-          if (!fossilUrl && images.length > 1) {
-            const secondSrc = images[1].srcset[images[1].srcset.length - 1].src;
-            fossilUrl = secondSrc.startsWith("//") ? "https:" + secondSrc : secondSrc;
-          }
+          if (!fossilUrl && images.length > 1) fossilUrl = images[1].srcset[images[1].srcset.length - 1].src;
         }
-      } catch (e) {
-        console.warn("Erro ao carregar mídia da Wikipedia:", e);
-      }
+      } catch (e) {}
 
-      const result = {
+      const finalResult = {
         restoration: restorationUrl || "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/No_image_available.svg/480px-No_image_available.svg.png",
         fossil: fossilUrl || restorationUrl
       };
-      mediaCache[species.id] = result;
-      return result;
+      mediaCache[species.id] = finalResult;
+      return finalResult;
     }
 
     async function renderSpeciesDetail() {
