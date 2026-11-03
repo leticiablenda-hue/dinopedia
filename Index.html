@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DinoClado | Enciclopédia Filogenética do Mesozoico</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: #0c0f14; color: #e2e8f0; }
+    .font-serif-title { font-family: 'Cinzel', serif; }
+    .tree-line { border-left: 2px solid #334155; }
+    .period-node { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .period-node.active { transform: scale(1.04); box-shadow: 0 0 25px rgba(245, 158, 11, 0.35); }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-500 selection:text-slate-950">
+
+  <!-- Cabeçalho -->
+  <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div>
+        <span class="text-xs uppercase tracking-widest text-amber-400 font-semibold">Arquivo Paleontológico Interativo</span>
+        <h1 class="text-2xl font-bold font-serif-title text-white tracking-wide">DINOPEDIA <span class="text-amber-500 text-base font-normal">CLADOGRAMA MESOZOICO</span></h1>
+      </div>
+      <div class="flex items-center gap-2 text-xs text-slate-400 bg-slate-900 px-3 py-2 rounded-lg border border-slate-800">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>Imagens integradas ao acervo Wikimedia Commons</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto w-full px-4 py-6 flex-1 flex flex-col gap-8">
+
+    <!-- 1. LINHA CRONOLÓGICA CONECTADA (EIXO EVOLUTIVO) -->
+    <section class="bg-slate-900/70 border border-slate-800 rounded-2xl p-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
+        <div>
+          <h2 class="text-sm uppercase tracking-wider text-slate-400 font-semibold">1. Sucessão Cronológica da Era Mesozoica</h2>
+          <p class="text-xs text-slate-500">Cada período se conecta ao anterior e ao seguinte. Selecione uma época para abrir sua árvore evolutiva.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="prevPeriodBtn" onclick="navigatePeriod(-1)" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 transition disabled:opacity-30">
+            ← Período Anterior
+          </button>
+          <button id="nextPeriodBtn" onclick="navigatePeriod(1)" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 transition disabled:opacity-30">
+            Próximo Período →
+          </button>
+        </div>
+      </div>
+
+      <!-- Nós dos Períodos Conectados -->
+      <div class="relative grid grid-cols-1 md:grid-cols-3 gap-4 items-center" id="timelineContainer">
+        <!-- Renderizado via JS -->
+      </div>
+    </section>
+
+    <!-- 2. ÁRVORE FILOGENÉTICA E FICHA DE ESPÉCIE -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- Coluna Esquerda: Cladograma do Período (7 colunas) -->
+      <section class="lg:col-span-7 bg-slate-900/70 border border-slate-800 rounded-2xl p-5">
+        <div class="border-b border-slate-800 pb-4 mb-5 flex items-center justify-between">
+          <div>
+            <span id="currentPeriodBadge" class="text-xs font-semibold uppercase px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Período</span>
+            <h2 id="treeSectionTitle" class="text-xl font-bold text-white mt-1">Árvore Taxonômica</h2>
+          </div>
+          <p id="periodEnvSummary" class="text-xs text-slate-400 max-w-xs text-right hidden sm:block"></p>
+        </div>
+
+        <!-- Árvore Genealógica / Cladograma -->
+        <div id="cladogramContainer" class="space-y-4">
+          <!-- Renderizado via JS -->
+        </div>
+      </section>
+
+      <!-- Coluna Direita: Ficha Completa da Espécie + Reconstrução vs Fóssil (5 colunas) -->
+      <aside class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 sticky top-24">
+        <div id="speciesDetailContainer">
+          <!-- Renderizado via JS -->
+        </div>
+      </aside>
+
+    </div>
+  </main>
+
+  <script>
+    // BANCO DE DADOS PALEONTOLÓGICO ESTRUTURADO POR PERÍODO E CLADO
+    const mesozoicData = [
+      {
+        id: "triassic",
+        name: "Período Triássico",
+        timeRange: "252 a 201 Milhões de Anos Atrás",
+        OrderIndex: 0,
+        prev: "Permiano (Paleozoico)",
+        next: "Período Jurássico",
+        color: "from-orange-600/30 to-amber-900/20 border-orange-500/50",
+        badgeColor: "text-orange-400",
+        environment: "Supercontinente Pangeia árido e quente; origem dos primeiros dinossauros após a extinção Permo-Triássica.",
+        clades: [
+          {
+            cladeName: "Saurischia Basal & Herrerasauria",
+            description: "Primeiros bípedes carnívoros primitivos da América do Sul.",
+            species: [
+              {
+                id: "staurikosaurus",
+                name: "Staurikosaurus pricei",
+                wikiTitle: "Staurikosaurus",
+                fossilQuery: "Staurikosaurus",
+                meaning: "Lagarto do Cruzeiro do Sul",
+                diet: "Carnívoro",
+                length: "2,2 metros",
+                weight: "30 kg",
+                location: "Formação Santa Maria, Rio Grande do Sul (Brasil)",
+                taxonomy: "Dinosauria ➔ Saurischia ➔ Herrerasauridae",
+                characteristics: "Um dos dinossauros mais antigos do mundo, encontrado em solo brasileiro. Possuía pernas longas adaptadas para corrida rápida, mandíbula com dentes serrilhados curvados para trás e cinco dedos nas mãos.",
+                fossilRecord: "Holótipo MCZ 1669 descoberto em Santa Maria (RS) por Llewellyn Ivor Price em 1936, preservando vértebras, mandíbula e ossos dos membros posteriores."
+              },
+              {
+                id: "herrerasaurus",
+                name: "Herrerasaurus ischigualastensis",
+                wikiTitle: "Herrerasaurus",
+                fossilQuery: "Herrerasaurus skull",
+                meaning: "Lagarto de Herrera",
+                diet: "Carnívoro",
+                length: "4,5 a 6 metros",
+                weight: "210 a 350 kg",
+                location: "Formação Ischigualasto (Argentina)",
+                taxonomy: "Dinosauria ➔ Saurischia ➔ Herrerasauridae",
+                characteristics: "Predador de topo do Triássico sul-americano. Apresentava uma articulação flexível na mandíbula inferior que permitia prender presas com força extrema.",
+                fossilRecord: "Crânios completos e esqueletos quase inteiros encontrados na Bacia de Ischigualasto, datados de cerca de 231 milhões de anos."
+              }
+            ]
+          },
+          {
+            cladeName: "Theropoda Basal (Neotheropoda)",
+            description: "Predadores ágeis com ossos ocos que dariam origem aos grandes carnívoros.",
+            species: [
+              {
+                id: "coelophysis",
+                name: "Coelophysis bauri",
+                wikiTitle: "Coelophysis",
+                fossilQuery: "Coelophysis fossil",
+                meaning: "Forma Oca",
+                diet: "Carnívoro / Piscívoro",
+                length: "3 metros",
+                weight: "20 kg",
+                location: "Novo México e Arizona (EUA)",
+                taxonomy: "Dinosauria ➔ Saurischia ➔ Theropoda ➔ Coelophysidae",
+                characteristics: "Corpo esguio, pescoço longo em formato de 'S' e ossos ocos semelhantes aos das aves modernas. Caçava pequenos vertebrados em bandos.",
+                fossilRecord: "Centenas de esqueletos articulados encontrados juntos no famoso depósito de Ghost Ranch, no Novo México."
+              }
+            ]
+          },
+          {
+            cladeName: "Sauropodomorpha Basal (Prossaurópodes)",
+            description: "Primeiros dinossauros herbívoros de pescoço alongado.",
+            species: [
+              {
+                id: "plateosaurus",
+                name: "Plateosaurus trossingensis",
+                wikiTitle: "Plateosaurus",
+                fossilQuery: "Plateosaurus skeleton",
+                meaning: "Lagarto Largo",
+                diet: "Herbívoro",
+                length: "6 a 10 metros",
+                weight: "600 a 4.000 kg",
+                location: "Alemanha, Suíça e França",
+                taxonomy: "Dinosauria ➔ Saurischia ➔ Sauropodomorpha ➔ Plateosauridae",
+                characteristics: "Herbívoro bípede robusto com garras grandes no polegar para puxar galhos altos e se defender de predadores.",
+                fossilRecord: "Mais de 100 esqueletos encontrados na Europa Central, muitos preservados completos em antigos lamaçais."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: "jurassic",
+        name: "Período Jurássico",
+        timeRange: "201 a 145 Milhões de Anos Atrás",
+        OrderIndex: 1,
+        prev: "Período Triássico",
+        next: "Período Cretáceo",
+        color: "from-emerald-600/30 to-teal-900/20 border-emerald-500/50",
+        badgeColor: "text-emerald-400",
+        environment: "Fragmentação da Pangeia, clima úmido com florestas densas de coníferas e cicadáceas; era dos gigantes saurópodes.",
+        clades: [
+          {
+            cladeName: "Theropoda (Allosauroidea & Avialae)",
+            description: "Grandes predadores continentais e o surgimento das primeiras aves.",
+            species: [
+              {
+                id: "allosaurus",
+                name: "Allosaurus fragilis",
+                wikiTitle: "Allosaurus",
+                fossilQuery: "Allosaurus skeleton",
+                meaning: "Lagarto Diferente",
+                diet: "Carnívoro",
+                length: "8,5 a 9,7 metros",
+                weight: "1.700 a 2.300 kg",
+                location: "Formação Morrison (EUA) e Portugal",
+                taxonomy: "Dinosauria ➔ Saurischia ➔ Theropoda ➔ Allosauridae",
+                characteristics: "Principal predador do Jurássico Superior. Possuía cristas ósseas acima dos olhos, braços fortes com três garras curvas e um crânio capaz de suportar impactos verticais.",
+                fossilRecord: "Dezenas de esqueletos encontrados no Cleveland-Lloyd Dinosaur Quarry (Utah), incluindo o famoso espécime 'Big Al'."
+              },
+              {
+                id: "archaeopteryx",
+                name: "Archaeopteryx lithographica",
+                wikiTitle: "Archaeopteryx",
+                fossilQuery: "Archaeopteryx fossil Berlin",
+                meaning: "Asa Antiga",
+                diet: "Insetívoro / Carnívoro",
+                length: "0,5 metro",
+                weight: "0,8 a 1 kg",
+                location: "Calcário de Solnhofen (Alemanha)",
+                taxonomy: "Dinosauria ➔ Theropoda ➔ Maniraptora ➔ Avialae",
+                characteristics: "Fóssil de transição icônico entre dinossauros não-avianos e aves: possuía penas assimétricas de voo, mas mantinha dentes, garras nas asas e longa cauda óssea.",
+                fossilRecord: "12 espécimes preservados em calcário litográfico finíssimo na Baviera, exibindo impressões nítidas das penas."
+              }
+            ]
+          },
+          {
+            cladeName: "Sauropoda (Macronaria & Diplodocoidea)",
+            description: "Gigantes quadrúpedes de pescoço colossal que dominaram as copas das árvores.",
+            species: [
+              {
+                id: "brachiosaurus",
+                name: "Brachiosaurus altithorax",
+                wikiTitle: "Brachiosaurus",
+                fossilQuery: "Brachiosaurus mount",
+                meaning: "Lagarto Braço",
+                diet: "Herbívoro",
+                length: "21 a 25 metros",
+                weight: "35 a 55 toneladas",
+                location: "Colorado e Utah (EUA)",
+                taxonomy: "Dinosauria ➔ Saurischia ➔ Sauropoda ➔ Brachiosauridae",
+                characteristics: "Diferente da maioria dos saurópodes, seus membros dianteiros eram mais longos que os traseiros, conferindo uma postura inclinada semelhante à de uma girafa.",
+                fossilRecord: "Holótipo FMNH P 25107 descoberto em 1900 no vale do Rio Colorado por Elmer S. Riggs."
+              }
+            ]
+          },
+          {
+            cladeName: "Ornithischia (Thyreophora)",
+            description: "Herbívoros couraçados equipados com placas dorsais e espinhos caudais.",
+            species: [
+              {
+                id: "stegosaurus",
+                name: "Stegosaurus stenops",
+                wikiTitle: "Stegosaurus",
+                fossilQuery: "Stegosaurus skeleton",
+                meaning: "Lagarto Telhado",
+                diet: "Herbívoro",
+                length: "7 a 9 metros",
+                weight: "5.000 kg",
+                location: "América do Norte e Europa",
+                taxonomy: "Dinosauria ➔ Ornithischia ➔ Thyreophora ➔ Stegosauridae",
+                characteristics: "Dotado de duas fileiras alternadas de placas ósseas vascularizadas no dorso (usadas para exibição e termorregulação) e quatro espinhos caudais letais (*thagomizer*).",
+                fossilRecord: "Esqueletos extremamente completos como o espécime 'Sophie' exposto no Museu de História Natural de Londres."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: "cretaceous",
+        name: "Período Cretáceo",
+        timeRange: "145 a 66 Milhões de Anos Atrás",
+        OrderIndex: 2,
+        prev: "Período Jurássico",
+        next: "Extinção K-Pg (Cenozoico)",
+        color: "from-amber-600/30 to-rose-900/20 border-amber-500/50",
+        badgeColor: "text-amber-400",
+        environment: "Continentes próximos da configuração atual, surgimento das plantas com flores (angiospermas) e máxima diversidade de dinossauros.",
+        clades: [
+          {
+            cladeName: "Theropoda (Spinosauridae & Tyrannosauridae)",
+            description: "Superpredadores especializados de Gondwana e da Laurásia.",
+            species: [
+              {
+                id: "spinosaurus",
+                name: "Spinosaurus aegyptiacus",
+                wikiTitle: "Spinosaurus",
+                fossilQuery: "Spinosaurus skeleton",
+                meaning: "Lagarto Espinho",
+                diet: "Piscívoro / Carnívoro Semiaquático",
+                length: "14 a 15 metros",
+                weight: "7.000 a 8.000 kg",
+                location: "Norte da África (e parentes próximos no Nordeste do Brasil)",
+                taxonomy: "Dinosauria ➔ Saurischia ➔ Theropoda ➔ Spinosauridae",
+                characteristics: "Maior dinossauro carnívoro conhecido. Possuía focinho estreito repleto de dentes cônicos, narinas recuadas, vela dorsal de até 1,8 m e cauda em forma de remo.",
+                fossilRecord: "Descoberto no Egito em 1912 por Ernst Stromer; neótipo descoberto no Marrocos revelou membros curtos e cauda aquática articulada."
+              },
+              {
+                id: "tyrannosaurus",
+                name: "Tyrannosaurus rex",
+                wikiTitle: "Tyrannosaurus",
+                fossilQuery: "Tyrannosaurus rex skeleton Sue",
+                meaning: "Lagarto Tirano Rei",
+                diet: "Carnívoro",
+                length: "12,3 a 13 metros",
+                weight: "8.000 a 9.500 kg",
+                location: "Formação Hell Creek (América do Norte)",
+                taxonomy: "Dinosauria ➔ Saurischia ➔ Theropoda ➔ Tyrannosauridae",
+                characteristics: "Possuía a mordida mais potente entre todos os animais terrestres já existentes (capaz de triturar ossos) e visão binocular aguçada.",
+                fossilRecord: "Mais de 50 espécimes catalogados, incluindo 'Sue' (FMNH PR 2081) e 'Scotty', com mais de 90% dos ossos preservados."
+              }
+            ]
+          },
+          {
+            cladeName: "Ornithischia (Ceratopsia)",
+            description: "Herbívoros quadrúpedes com escudos cranianos e chifres faciais.",
+            species: [
+              {
+                id: "triceratops",
+                name: "Triceratops horridus",
+                wikiTitle: "Triceratops",
+                fossilQuery: "Triceratops horridus skeleton",
+                meaning: "Rosto com Três Chifres",
+                diet: "Herbívoro",
+                length: "8 a 9 metros",
+                weight: "6.000 a 10.000 kg",
+                location: "América do Norte",
+                taxonomy: "Dinosauria ➔ Ornithischia ➔ Marginocephalia ➔ Ceratopsidae",
+                characteristics: "Equipado com dois longos chifres supraorbitais, um chifre nasal menor e um grande escudo ósseo (folho) que protegia o pescoço contra ataques do T. rex.",
+                fossilRecord: "Centenas de crânios encontrados na Formação Hell Creek, permitindo documentar o crescimento dos chifres desde filhotes até adultos."
+              }
+            ]
+          }
+        ]
+      }
+    ];
+
+    let activePeriodIndex = 0;
+    let activeSpecies = mesozoicData[0].clades[0].species[0];
+    let currentImageTab = "restoration"; // 'restoration' ou 'fossil'
+    let mediaCache = {};
+
+    // Renderiza a Linha Cronológica Conectada
+    function renderTimeline() {
+      const container = document.getElementById("timelineContainer");
+      container.innerHTML = mesozoicData.map((period, idx) => {
+        const isActive = idx === activePeriodIndex;
+        return `
+          <div onclick="selectPeriod(${idx})" class="period-node cursor-pointer rounded-xl p-4 border bg-gradient-to-br ${period.color} ${isActive ? 'active ring-2 ring-amber-400' : 'opacity-70 hover:opacity-100 border-slate-800'} relative">
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="font-bold uppercase tracking-wider ${period.badgeColor}">Fase 0${idx + 1}</span>
+              <span class="text-slate-400">${period.timeRange}</span>
+            </div>
+            <h3 class="text-lg font-bold text-white">${period.name}</h3>
+            <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+              <span>← Ant.: ${period.prev}</span>
+              <span>Seg.: ${period.next} →</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      document.getElementById("prevPeriodBtn").disabled = activePeriodIndex === 0;
+      document.getElementById("nextPeriodBtn").disabled = activePeriodIndex === mesozoicData.length - 1;
+    }
+
+    function navigatePeriod(direction) {
+      const nextIdx = activePeriodIndex + direction;
+      if (nextIdx >= 0 && nextIdx < mesozoicData.length) {
+        selectPeriod(nextIdx);
+      }
+    }
+
+    function selectPeriod(index) {
+      activePeriodIndex = index;
+      const period = mesozoicData[index];
+      activeSpecies = period.clades[0].species[0];
+      renderTimeline();
+      renderCladogram();
+      renderSpeciesDetail();
+    }
+
+    // Renderiza a Árvore Taxonômica do Período Selecionado
+    function renderCladogram() {
+      const period = mesozoicData[activePeriodIndex];
+      document.getElementById("currentPeriodBadge").textContent = `${period.name} (${period.timeRange})`;
+      document.getElementById("treeSectionTitle").textContent = `Classificação Filogenética — ${period.name}`;
+      document.getElementById("periodEnvSummary").textContent = period.environment;
+
+      const container = document.getElementById("cladogramContainer");
+      container.innerHTML = `
+        <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-4">
+          <div class="flex items-center gap-2 text-amber-400 font-bold text-sm mb-3">
+            <span class="px-2 py-0.5 bg-amber-500/20 rounded border border-amber-500/40">Raiz</span>
+            <span>Clado Dinosauria (${period.name})</span>
+          </div>
+          <div class="ml-3 pl-4 tree-line space-y-5">
+            ${period.clades.map(clade => `
+              <div class="relative">
+                <div class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                  <span>${clade.cladeName}</span>
+                </div>
+                <p class="text-xs text-slate-400 ml-4 mb-2">${clade.description}</p>
+                <div class="ml-4 pl-4 tree-line grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-2">
+                  ${clade.species.map(sp => {
+                    const isSelected = activeSpecies.id === sp.id;
+                    return `
+                      <button onclick="selectSpecies('${sp.id}')" class="text-left p-3 rounded-xl border transition ${isSelected ? 'bg-amber-500/15 border-amber-500 text-white shadow-lg' : 'bg-slate-900/90 border-slate-800 text-slate-300 hover:border-slate-600'}">
+                        <div class="text-xs text-amber-400 font-medium">${sp.diet} • ${sp.length}</div>
+                        <div class="font-bold italic text-sm mt-0.5">${sp.name}</div>
+                        <div class="text-[11px] text-slate-400 truncate mt-1">${sp.location}</div>
+                      </button>
+                    `;
+                  }).join("")}
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    function selectSpecies(speciesId) {
+      const period = mesozoicData[activePeriodIndex];
+      for (const clade of period.clades) {
+        const found = clade.species.find(s => s.id === speciesId);
+        if (found) {
+          activeSpecies = found;
+          break;
+        }
+      }
+      renderCladogram();
+      renderSpeciesDetail();
+    }
+
+    function switchImageTab(tab) {
+      currentImageTab = tab;
+      renderSpeciesDetail();
+    }
+
+    // Busca imagens reais na API da Wikipedia (Reconstrução em Vida e Fóssil)
+    async function fetchSpeciesImages(species) {
+      if (mediaCache[species.id]) return mediaCache[species.id];
+
+      let restorationUrl = "";
+      let fossilUrl = "";
+
+      try {
+        const summaryRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(species.wikiTitle)}`);
+        const summaryData = await summaryRes.json();
+        if (summaryData.thumbnail && summaryData.thumbnail.source) {
+          restorationUrl = summaryData.originalimage ? summaryData.originalimage.source : summaryData.thumbnail.source;
+        }
+
+        const mediaRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/media-list/${encodeURIComponent(species.wikiTitle)}`);
+        const mediaData = await mediaRes.json();
+
+        if (mediaData.items && mediaData.items.length > 0) {
+          const images = mediaData.items.filter(item => item.type === "image" && item.srcset && item.srcset.length > 0);
+          for (const img of images) {
+            const titleLower = (img.title || "").toLowerCase();
+            const captionLower = (img.caption && img.caption.text ? img.caption.text : "").toLowerCase();
+            const combined = titleLower + " " + captionLower;
+            const src = img.srcset[img.srcset.length - 1].src;
+            const fullSrc = src.startsWith("//") ? "https:" + src : src;
+
+            if (!fossilUrl && (combined.includes("skull") || combined.includes("skeleton") || combined.includes("fossil") || combined.includes("holotype") || combined.includes("mount") || combined.includes("bone"))) {
+              if (fullSrc !== restorationUrl) fossilUrl = fullSrc;
+            }
+            if ((combined.includes("restoration") || combined.includes("reconstruction") || combined.includes("life") || combined.includes("ntamura") || combined.includes("paleoart")) && !restorationUrl) {
+              restorationUrl = fullSrc;
+            }
+          }
+          if (!fossilUrl && images.length > 1) {
+            const secondSrc = images[1].srcset[images[1].srcset.length - 1].src;
+            fossilUrl = secondSrc.startsWith("//") ? "https:" + secondSrc : secondSrc;
+          }
+        }
+      } catch (e) {
+        console.warn("Erro ao carregar mídia da Wikipedia:", e);
+      }
+
+      const result = {
+        restoration: restorationUrl || "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/No_image_available.svg/480px-No_image_available.svg.png",
+        fossil: fossilUrl || restorationUrl
+      };
+      mediaCache[species.id] = result;
+      return result;
+    }
+
+    async function renderSpeciesDetail() {
+      const container = document.getElementById("speciesDetailContainer");
+      const sp = activeSpecies;
+
+      container.innerHTML = `
+        <div class="animate-pulse text-xs text-amber-400 mb-2">Carregando registros visuais de ${sp.name}...</div>
+      `;
+
+      const images = await fetchSpeciesImages(sp);
+      const displayImg = currentImageTab === "restoration" ? images.restoration : images.fossil;
+      const captionText = currentImageTab === "restoration"
+        ? `Ilustração / Reconstrução paleobiológica de ${sp.name}`
+        : `Registro Fóssil / Esqueleto catalogado (${sp.fossilRecord})`;
+
+      container.innerHTML = `
+        <div>
+          <div class="text-[11px] font-mono text-amber-400 mb-1">${sp.taxonomy}</div>
+          <h3 class="text-2xl font-bold italic text-white">${sp.name}</h3>
+          <p class="text-xs text-slate-400 mb-4">Significado: "${sp.meaning}"</p>
+
+          <!-- Alternador: Reconstrução em Vida vs Fóssil Encontrado -->
+          <div class="grid grid-cols-2 gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800 mb-3">
+            <button onclick="switchImageTab('restoration')" class="py-2 px-3 rounded-lg text-xs font-semibold transition ${currentImageTab === 'restoration' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'}">
+              🎨 Como Seria em Vida
+            </button>
+            <button onclick="switchImageTab('fossil')" class="py-2 px-3 rounded-lg text-xs font-semibold transition ${currentImageTab === 'fossil' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'}">
+              🦴 Fóssil Encontrado
+            </button>
+          </div>
+
+          <!-- Visor de Imagem -->
+          <div class="relative rounded-xl overflow-hidden bg-slate-950 border border-slate-800 flex flex-col items-center justify-center min-h-[220px] max-h-[280px] p-2">
+            <img src="${displayImg}" alt="${sp.name}" class="max-h-[230px] w-auto object-contain rounded-lg" />
+          </div>
+          <p class="text-[11px] text-slate-400 mt-2 italic text-center">${captionText}</p>
+
+          <!-- Metadados Biométricos -->
+          <div class="grid grid-cols-3 gap-2 my-4 text-center">
+            <div class="bg-slate-950/80 p-2.5 rounded-lg border border-slate-800">
+              <span class="block text-[10px] uppercase text-slate-500">Dieta</span>
+              <span class="text-xs font-bold text-slate-200">${sp.diet}</span>
+            </div>
+            <div class="bg-slate-950/80 p-2.5 rounded-lg border border-slate-800">
+              <span class="block text-[10px] uppercase text-slate-500">Comprimento</span>
+              <span class="text-xs font-bold text-slate-200">${sp.length}</span>
+            </div>
+            <div class="bg-slate-950/80 p-2.5 rounded-lg border border-slate-800">
+              <span class="block text-[10px] uppercase text-slate-500">Massa Est.</span>
+              <span class="text-xs font-bold text-slate-200">${sp.weight}</span>
+            </div>
+          </div>
+
+          <!-- Características e Registro Fóssil -->
+          <div class="space-y-3 text-xs leading-relaxed text-slate-300">
+            <div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800/80">
+              <strong class="text-amber-400 block mb-1">📍 Ocorrência Geográfica e Estratigrafia:</strong>
+              ${sp.location}
+            </div>
+            <div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800/80">
+              <strong class="text-amber-400 block mb-1">🔬 Características Morfológicas:</strong>
+              ${sp.characteristics}
+            </div>
+            <div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800/80">
+              <strong class="text-amber-400 block mb-1">🦴 Documentação Fóssil:</strong>
+              ${sp.fossilRecord}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Inicialização
+    renderTimeline();
+    renderCladogram();
+    renderSpeciesDetail();
+  </script>
+</body>
+</html>
